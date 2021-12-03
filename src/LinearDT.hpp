@@ -6,26 +6,40 @@
 
 #define ROUND(x) (int((x) + 0.5))
 
+#define GET_MAX(x,y) ((x<y)?y:x)
+
+
 using PointCloudPtr = PointCloudTPtr;
 
 class LinearDT
 {
 public:
     LinearDT(const PointCloudPtr &cloud, float expandFactor = 2.0f, uint32_t div = 100)
-     : range(*cloud)
 {
-    // Compute range of distance field from bounding box
-    auto delta = expandFactor * 0.5f * MaxComp(range.Diagonal());
-    auto halfDiag = Vector3f(delta, delta, delta);
-    auto center = Point3f((range.max.x + range.min.x) / 2,
-                          (range.max.y + range.min.y) / 2,
-                          (range.max.z + range.min.z) / 2);
-    range.min = center - halfDiag;
-    range.max = center + halfDiag;
+    // // Compute range of distance field from bounding box
+    // auto delta = expandFactor * 0.5f * MaxComp(range.Diagonal());
+    // auto halfDiag = Vector3f(delta, delta, delta);
+    // auto center = Point3f((range.max.x + range.min.x) / 2,
+    //                       (range.max.y + range.min.y) / 2,
+    //                       (range.max.z + range.min.z) / 2);
+    // range.min = center - halfDiag;
+    // range.max = center + halfDiag;
 
-    // Compute cell number and size in each dimension
-    nCells = div - 1; // if we have 300 points, then there are 299 cells inside
-    cellEdge = 2 * delta / float(nCells);
+    // // Compute cell number and size in each dimension
+    // nCells = div - 1; // if we have 300 points, then there are 299 cells inside
+    // cellEdge = 2 * delta / float(nCells);
+    this->div = div;
+
+    pcl::getMinMax3D(*cloud, _min, _max);
+    auto _diag = _max - _min;
+
+    std::cerr << "min:" << _min << std::endl;
+    std::cerr << "max:" << _max << std::endl;
+
+    auto _fullLen =  GET_MAX( GET_MAX(_diag[0], _diag[1]), _diag[2]) * 1.3;
+    cellLen = _fullLen / (float) div;
+    std::cerr << "cellLen:" << cellLen << std::endl;
+
 
     // Construct grid and temporary variables
     boost::multi_array<float, 3> g_scan;
@@ -39,8 +53,15 @@ public:
     // and grid as output; second pass reverses that process, and the third pass again reverses it, so
     // the final result, namely DT, is stored in grid.
     tbb::parallel_for(0, int(cloud->points.size()), [&](int index) {
-        auto relPos = cloud->points[index] - range.min; // relative position of grid origin
-        g_scan[ROUND(relPos[0] / cellEdge)][ROUND(relPos[1] / cellEdge)][ROUND(relPos[2] / cellEdge)] = 1.0;
+        // auto relPos = cloud->points[index] - range.min; // relative position of grid origin
+        // g_scan[ROUND(relPos[0] / cellEdge)][ROUND(relPos[1] / cellEdge)][ROUND(relPos[2] / cellEdge)] = 1.0;
+
+        auto relPos = cloud->points[index]; // - range.min; // relative position of grid origin
+auto _x = (int)((relPos.x - _min.x) / cellLen);
+auto _y =(int) ( ( relPos.y - _min.y) / cellLen);
+auto _z = (int)( (relPos.z - _min.z) / cellLen);
+g_scan[_x][_y][_z]   ++;
+
     });
 
     float infinity = 3 * div;
@@ -178,30 +199,36 @@ public:
     float Evaluate(Point3f query)
     {
  // Clamp if query drops out of bound and compute its distance to bound
-    auto clamped = Vector3f(Vector3f::Zero());
-    for (auto i = 0u; i < 3; i++)
-    {
-        if (query.data[i] < range.min.data[i])
-        {
-            clamped[i] = range.min.data[i] - query.data[i];
-            query.data[i] = range.min.data[i];
-        }
-        else if (query.data[i] > range.max.data[i])
-        {
-            clamped[i] = query.data[i] - range.max.data[i];
-            query.data[i] = range.max.data[i];
-        }
+    // auto clamped = Vector3f(Vector3f::Zero());
+    // for (auto i = 0u; i < 3; i++)
+    // {
+    //     if (query.data[i] < range.min.data[i])
+    //     {
+    //         clamped[i] = range.min.data[i] - query.data[i];
+    //         query.data[i] = range.min.data[i];
+    //     }
+    //     else if (query.data[i] > range.max.data[i])
+    //     {
+    //         clamped[i] = query.data[i] - range.max.data[i];
+    //         query.data[i] = range.max.data[i];
+    //     }
+    // }
+using Vector3i = Eigen::Vector3i;
+    // Compute discrete coordinate and interpolation ratio in the grid
+    // auto relPos = query - _min; // relative position of grid origin
+    Vector3i coord;
+    // Vector3f ratio;
+    auto lookup = [&](const Eigen::Vector3i &idx) { return grid[idx[0]][idx[1]][idx[2]] * cellLen; };
+    for (auto i = 0u; i < 3; i++){
+        coord[i] = (int) ( ( query.data[i]  - _min.data[i])/ cellLen);
+        if (coord[i] < 0 ) coord[i] = 0;
+        if (coord[i] > div-1 ) coord[i] = div-1;
     }
 
-    // Compute discrete coordinate and interpolation ratio in the grid
-    auto relPos = query - range.min; // relative position of grid origin
-    Vector3i coord;
-    Vector3f ratio;
-    auto lookup = [&](const Eigen::Vector3i &idx) { return grid[idx[0]][idx[1]][idx[2]] * cellEdge; };
-    for (auto i = 0u; i < 3; i++)
-        coord[i] = std::min(IndexT(relPos[i] / cellEdge + 0.5f), nCells);
+    // for (auto i = 0u; i < 3; i++)
+    //     coord[i] = std::min(IndexT(relPos[i] / cellEdge + 0.5f), nCells);
 
-    return lookup(coord) + clamped.norm();
+    return lookup(coord);// + clamped.norm();
 
     }
 
@@ -213,7 +240,9 @@ public:
 
 private:
     boost::multi_array<float, 3> grid;
-    Bound3f range;
+    // Bound3f range;
+    Point3f _min, _max;
     uint32_t nCells; // number of cells in one dimension
-    float cellEdge;  // namely the length of a cell's edge
+    float cellLen;  // namely the length of a cell's edge
+    int div;
 };
