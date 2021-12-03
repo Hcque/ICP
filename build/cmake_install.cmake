@@ -1,4 +1,4 @@
-# Install script for directory: /home/haochen/Desktop/IterCP
+# Install script for directory: /home/hc/Desktop/ICP
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -45,5 +45,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/haochen/Desktop/IterCP/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/hc/Desktop/ICP/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

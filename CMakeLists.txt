@@ -3,7 +3,9 @@ cmake_minimum_required(VERSION 3.9 FATAL_ERROR)
 set(CMAKE_BUILD_TYPE Debug)
 project(ICP)
 find_package(PCL 1.7 REQUIRED)
-include_directories(${PCL_INCLUDE_DIRS})
+find_package(TBB REQUIRED)
+
+include_directories(${PCL_INCLUDE_DIRS} ${TBB_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
@@ -15,6 +17,9 @@ if (OPENMP_FOUND)
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
+
+
+
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
@@ -22,5 +27,5 @@ find_package(Threads REQUIRED)
 aux_source_directory(src DIR_SRC)
 
 add_executable(icp src/main.cpp)
-target_link_libraries(icp ${PCL_LIBRARIES} )
+target_link_libraries(icp ${PCL_LIBRARIES}  tbb)
 # target_link_libraries(icp Threads::Threads)

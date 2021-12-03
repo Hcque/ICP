@@ -1,4 +1,14 @@
 // = or ==
+
+// revise of f_z
+// wrong init: 0? 
+// still wrong init
+
+// clamped
+
+// print does not help much
+
+
 #pragma once
 
 #include "common.hpp"
@@ -7,6 +17,7 @@
 
 #include <time.h>
 #include <iostream>
+#include <algorithm>
 #include <boost/multi_array.hpp>
 #include <Eigen/Core>
 #include <pcl/common/common.h>
@@ -14,22 +25,22 @@
 using namespace Eigen;
 using namespace std;
 using namespace pcl;
+using namespace icp;
 
 #define SQ(x) ((x)*(x))
 
-int NUM_TH = 1;
-using Point3f = PointXYZ;
+// static int NUM_TH = 1;
 
-class LDT
+class LDT_prev
 {
 public:
-    LDT(const PointCloudTPtr& _b, uint32_t _div = 300);
-    float Distance(Vector3f& query);
+    LDT_prev(const PointCloudTPtr& _b, uint32_t _div = 300);
+    float Distance(float, float, float);
 
     boost::multi_array<float, 3> b, g, dt, dt2;
+    float cellLen;
 private:
     Point3f _min, _max;
-    float cellLen;
     uint32_t nCells, div;
 
     // void PP(boost::multi_array<float, 2>& dt)
@@ -43,32 +54,48 @@ private:
 
 };
 
-LDT::LDT(const PointCloudTPtr& _b, uint32_t _div): div(_div)
+#define GET_MAX(x,y) ((x<y)?y:x)
+LDT_prev::LDT_prev(const PointCloudTPtr& _b, uint32_t _div): div(_div)
 {
+    float infinity = 3 * div;
+
     b.resize(boost::extents[div][div][div]);
     g.resize(boost::extents[div][div][div]);
+
+    // std::fill_n(g.data(), g.num_elements(), infinity);
+    // std::cout << g[0][0][0] << "\n";
+
     dt.resize(boost::extents[div][div][div]);
+    dt2.resize(boost::extents[div][div][div]);
 
     pcl::getMinMax3D(*_b, _min, _max);
     std::cerr << "min:" << _min << std::endl;
     std::cerr << "max:" << _max << std::endl;
 
-    auto _fullLen = std::max( _min[2] - _max[2], std::max(_min[0] - _max[0], _mi[1], _max[1]) );
+    auto _diag = _max - _min;
+    auto _fullLen =  GET_MAX( GET_MAX(_diag[0], _diag[1]), _diag[2]) * 1.3;
+    // auto _fullLen = 1;
     cellLen = _fullLen / (float) div;
+    std::cerr << "cellLen:" << cellLen << std::endl;
 
-    auto X = source->getMatrixXfMap(3,4,0).transpose().cast<double>();
-    for (int i = 0 ; i < X.cols(); i ++ )
+    for (int i = 0 ; i < _b->points.size(); i ++ )
     {
-        auto _row = X.block(i,0,1,3);
-        auto _x = (int) (_row[0] - _min[0] / cellLen);
-        auto _y = (int) (_row[1] - _min[1] / cellLen);
-        auto _z = (int) (_row[2] - _min[2] / cellLen);
-        g[_x][_y][_z] += 1;
+        auto _row = _b->points[i];
+        auto _x = (int) ( (_row.x - _min.x) / cellLen);
+        auto _y = (int) ( (_row.y - _min.y) / cellLen);
+        auto _z = (int) ( (_row.z - _min.z) / cellLen);
+        assert(_x < div);
+        assert(_y < div);
+        assert(_z < div);
+        // cout << _x << endl;
+        // cout << _y << endl;
+        // cout << _z << endl;
+        b[_x][_y][_z] ++  ;
     }
 
-    float infinity = 3 * div;
 
-    auto f = [&](int x, int u, int y, int z)
+    // keep y, z constant
+    auto f = [&](int x, int u, int y, int z) 
     {
         return SQ(x-u) + SQ(g[u][y][z]);
     };
@@ -77,7 +104,7 @@ LDT::LDT(const PointCloudTPtr& _b, uint32_t _div): div(_div)
         return (int) ((SQ(u) - SQ(i) + SQ(g[u][y][z]) - SQ(g[i][y][z]) ) / (2*(u-i))) ;
     };
 
-    omp_set_num_threads(NUM_TH);
+    // omp_set_num_threads(NUM_TH);
     #pragma omp parallel
     {
     #pragma omp for
@@ -101,13 +128,16 @@ LDT::LDT(const PointCloudTPtr& _b, uint32_t _div): div(_div)
     } // omp
 
 
-    omp_set_num_threads(NUM_TH);
+    // omp_set_num_threads(NUM_TH);
     #pragma omp parallel
     {
-    vector<int> s(div), t(div);
     #pragma omp for
     
-    for (int z = 0; z < div; z ++) for (int y = 0; y < div; y ++ )
+    for (int z = 0; z < div; z ++) {
+
+        vector<int> s(div), t(div);
+    
+    for (int y = 0; y < div; y ++ )
     {
         // vector<int> s(div), t(div);
         auto q = 0; s[0] = 0; t[0] = 0;
@@ -140,6 +170,7 @@ LDT::LDT(const PointCloudTPtr& _b, uint32_t _div): div(_div)
             if (u == t[q]) q--;
         }
     }
+    }
 
     } // omp
 
@@ -147,15 +178,20 @@ LDT::LDT(const PointCloudTPtr& _b, uint32_t _div): div(_div)
 
     auto f_z = [&](int z, int u, int y, int x)
     {
-        return SQ(z-u) + SQ(g[x][y][u]);
+        return SQ(z-u) + SQ(dt[x][y][u]);
     };
     auto Sep_z = [&](int i, int u, int y, int x)
     {
-        return (int) ((SQ(u) - SQ(i) + SQ(g[x][y][u]) - SQ(g[x][y][i]) ) / (2*(u-i))) ;
+        return (int) ((SQ(u) - SQ(i) + SQ(dt[x][y][u]) - SQ(dt[x][y][i]) ) / (2*(u-i))) ;
     };
 
+    // vector<int> s(div), t(div);
+    for (int x = 0; x < div; x ++ ) {
+        
+
     vector<int> s(div), t(div);
-    for (int x = 0; x < div; x ++ ) for (int y = 0; y < div; y ++ )
+
+        for (int y = 0; y < div; y ++ )
     {
         // vector<int> s(div), t(div);
         auto q = 0; s[0] = 0; t[0] = 0;
@@ -171,7 +207,7 @@ LDT::LDT(const PointCloudTPtr& _b, uint32_t _div): div(_div)
             }
             else
             {
-                int w = 1 + Sep(s[q], u, y, x);
+                int w = 1 + Sep_z(s[q], u, y, x);
                 if (w < div)
                 {
                     q ++;
@@ -184,18 +220,58 @@ LDT::LDT(const PointCloudTPtr& _b, uint32_t _div): div(_div)
         // scan 6 
         for (int u = div-1; u >= 0; u -- )
         {
-            dt[x][y][u] = f(u,s[q],y, x);
+            dt2[x][y][u] =  std::sqrt(f_z(u,s[q],y, x) );
             if (u == t[q]) q--;
         }
     }
 
+    }
+
+
+    // for (int i = 0; i < div; i ++ ) for (int j = 0; j < div; j ++ ) for (int k = 0; k < div; k ++ )
+    // {
+    //     cout << dt2[i][j][k] << " ";
+    // }
+
+    // cout << "\n";
+
+
+
 }
 
 
-float LDT::Distance(Vector3f& query)
+float LDT_prev::Distance(float x, float y, float z)
 {
-    int x = query[0], y = query[1], z = query[2];
-    return dt[x][y][z];
+    float res_x, res_y, res_z;
+    res_x = res_y = res_z = 0.0f;
+
+    // auto clamp = [&](const Point3f& _min, const Point3f& _max, float &x, float& res_x)
+    // {
+    //     if (x < _min.x) {res_x = _min.x - x; x = _min.x; }
+    //     if (x > _max.x) {res_x = x - _max.x; x = _max.x; }
+    // };
+
+    // clamp(_min, _max, x, res_x);
+    // clamp(_min, _max, y, res_y);
+    // clamp(_min, _max, z, res_z);
+    if (x < _min.x) {res_x = _min.x - x; x = _min.x; }
+    if (x > _max.x) {res_x = x - _max.x; x = _max.x; }
+    if (y < _min.y) {res_y = _min.y - y; y = _min.y; }
+    if (y > _max.y) {res_y = y - _max.y; y = _max.y; }
+    if (z < _min.z) {res_z = _min.z - z; z = _min.z; }
+    if (z > _max.z) {res_z = z - _max.z; z = _max.z; }
+
+    x = (int) ((x-_min.x) / cellLen ) ;
+    y = (int) ((y-_min.y) / cellLen ) ;
+    z = (int) ((z-_min.z) / cellLen ) ;
+
+    assert(x >= 0 && x < div);
+    assert(y >= 0 && y < div);
+    assert(z >= 0 && z < div);
+
+    float added_norm = std::sqrt(res_x*res_x + res_y*res_y + res_z*res_z);
+    // std::cout << "added_norm: " << added_norm << "\n";
+    return  (dt2[x][y][z]) * cellLen ; // + added_norm;
 }
 
 // MatrixXf testa(4,4);

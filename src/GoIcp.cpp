@@ -8,13 +8,15 @@
 #include <queue>
 #include "common.hpp"
 #include "jly_3ddt.h"
-#include "LinearDT.hpp"
+// #include "LinearDT.hpp"
 
 // #include "jly_icp3d.hpp"
 // #include "jly_3ddt.cpp"
 
 #include "SingleThreadIcp.cpp"
-#include "DT.cpp"
+// #include "DT.cpp"
+// #include "LDT.cpp"
+#include "testLDT.cpp"
 #include "kdtree.cpp"
 
 #define PI 3.1415926536
@@ -76,10 +78,11 @@ public:
     std::vector<Point3f> pDataTemp;
 	ICP3D<float> icp3d;
     SingleThreadIcp icp;
-    KDTree dt;
+    // KDTree dt;
     // DT dt;
     // LinearDT dt;
 	// DT3D dt;
+    LDT dt;
     int ITER;
 };
 

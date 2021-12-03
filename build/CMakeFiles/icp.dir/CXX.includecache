@@ -6,45 +6,53 @@
 
 #IncludeRegexTransform: 
 
-/home/haochen/Desktop/IterCP/src/DT.cpp
-omp.h
--
-common.hpp
-/home/haochen/Desktop/IterCP/src/common.hpp
-vector
--
-kdtree.cpp
-/home/haochen/Desktop/IterCP/src/kdtree.cpp
-
-/home/haochen/Desktop/IterCP/src/GoIcp.cpp
+/home/hc/Desktop/ICP/src/GoIcp.cpp
 vector
 -
 queue
 -
 common.hpp
-/home/haochen/Desktop/IterCP/src/common.hpp
+/home/hc/Desktop/ICP/src/common.hpp
 jly_3ddt.h
-/home/haochen/Desktop/IterCP/src/jly_3ddt.h
-LinearDT.hpp
-/home/haochen/Desktop/IterCP/src/LinearDT.hpp
+/home/hc/Desktop/ICP/src/jly_3ddt.h
 SingleThreadIcp.cpp
-/home/haochen/Desktop/IterCP/src/SingleThreadIcp.cpp
-DT.cpp
-/home/haochen/Desktop/IterCP/src/DT.cpp
+/home/hc/Desktop/ICP/src/SingleThreadIcp.cpp
+testLDT.cpp
+/home/hc/Desktop/ICP/src/testLDT.cpp
 kdtree.cpp
-/home/haochen/Desktop/IterCP/src/kdtree.cpp
+/home/hc/Desktop/ICP/src/kdtree.cpp
 
-/home/haochen/Desktop/IterCP/src/LinearDT.hpp
+/home/hc/Desktop/ICP/src/LDT.cpp
 common.hpp
-/home/haochen/Desktop/IterCP/src/common.hpp
+/home/hc/Desktop/ICP/src/common.hpp
+omp.h
+-
+time.h
+-
+iostream
+-
+algorithm
+-
 boost/multi_array.hpp
 -
+Eigen/Core
+-
+pcl/common/common.h
+-
 
-/home/haochen/Desktop/IterCP/src/Registration.hpp
+/home/hc/Desktop/ICP/src/LinearDT.hpp
 common.hpp
-/home/haochen/Desktop/IterCP/src/common.hpp
+/home/hc/Desktop/ICP/src/common.hpp
+boost/multi_array.hpp
+-
+tbb/tbb.h
+-
 
-/home/haochen/Desktop/IterCP/src/SingleThreadIcp.cpp
+/home/hc/Desktop/ICP/src/Registration.hpp
+common.hpp
+/home/hc/Desktop/ICP/src/common.hpp
+
+/home/hc/Desktop/ICP/src/SingleThreadIcp.cpp
 pcl/io/ply_io.h
 -
 pcl/io/vtk_lib_io.h
@@ -66,11 +74,11 @@ vtkRendererCollection.h
 vtkCamera.h
 -
 common.hpp
-/home/haochen/Desktop/IterCP/src/common.hpp
+/home/hc/Desktop/ICP/src/common.hpp
 Registration.hpp
-/home/haochen/Desktop/IterCP/src/Registration.hpp
+/home/hc/Desktop/ICP/src/Registration.hpp
 kdtree.cpp
-/home/haochen/Desktop/IterCP/src/kdtree.cpp
+/home/hc/Desktop/ICP/src/kdtree.cpp
 unordered_map
 -
 vector
@@ -78,7 +86,7 @@ vector
 fstream
 -
 
-/home/haochen/Desktop/IterCP/src/common.hpp
+/home/hc/Desktop/ICP/src/common.hpp
 iostream
 -
 cmath
@@ -90,17 +98,17 @@ pcl/common/common.h
 omp.h
 -
 
-/home/haochen/Desktop/IterCP/src/jly_3ddt.h
+/home/hc/Desktop/ICP/src/jly_3ddt.h
 iostream
 -
 
-/home/haochen/Desktop/IterCP/src/jly_icp3d.cpp
+/home/hc/Desktop/ICP/src/jly_icp3d.cpp
 matrix.h
-/home/haochen/Desktop/IterCP/src/matrix.h
+/home/hc/Desktop/ICP/src/matrix.h
 nanoflann.hpp
-/home/haochen/Desktop/IterCP/src/nanoflann.hpp
+/home/hc/Desktop/ICP/src/nanoflann.hpp
 
-/home/haochen/Desktop/IterCP/src/kdtree.cpp
+/home/hc/Desktop/ICP/src/kdtree.cpp
 cmath
 -
 cassert
@@ -114,9 +122,9 @@ queue
 vector
 -
 common.hpp
-/home/haochen/Desktop/IterCP/src/common.hpp
+/home/hc/Desktop/ICP/src/common.hpp
 
-/home/haochen/Desktop/IterCP/src/main.cpp
+/home/hc/Desktop/ICP/src/main.cpp
 pcl/io/ply_io.h
 -
 pcl/io/vtk_lib_io.h
@@ -138,23 +146,29 @@ vtkRendererCollection.h
 vtkCamera.h
 -
 SingleThreadIcp.cpp
-/home/haochen/Desktop/IterCP/src/SingleThreadIcp.cpp
+/home/hc/Desktop/ICP/src/SingleThreadIcp.cpp
 jly_3ddt.h
-/home/haochen/Desktop/IterCP/src/jly_3ddt.h
+/home/hc/Desktop/ICP/src/jly_3ddt.h
 jly_icp3d.cpp
-/home/haochen/Desktop/IterCP/src/jly_icp3d.cpp
+/home/hc/Desktop/ICP/src/jly_icp3d.cpp
 common.hpp
-/home/haochen/Desktop/IterCP/src/common.hpp
+/home/hc/Desktop/ICP/src/common.hpp
 GoIcp.cpp
-/home/haochen/Desktop/IterCP/src/GoIcp.cpp
+/home/hc/Desktop/ICP/src/GoIcp.cpp
 LinearDT.hpp
-/home/haochen/Desktop/IterCP/src/LinearDT.hpp
+/home/hc/Desktop/ICP/src/LinearDT.hpp
+testLDT.cpp
+/home/hc/Desktop/ICP/src/testLDT.cpp
+LDT.cpp
+/home/hc/Desktop/ICP/src/LDT.cpp
 time.h
+-
+cmath
 -
 fstream
 -
 
-/home/haochen/Desktop/IterCP/src/matrix.h
+/home/hc/Desktop/ICP/src/matrix.h
 stdio.h
 -
 string.h
@@ -168,7 +182,7 @@ vector
 stdint.h
 -
 
-/home/haochen/Desktop/IterCP/src/nanoflann.hpp
+/home/hc/Desktop/ICP/src/nanoflann.hpp
 vector
 -
 cassert
@@ -183,6 +197,16 @@ cmath
 -
 limits
 -
+
+/home/hc/Desktop/ICP/src/testLDT.cpp
+iostream
+-
+Eigen/Core
+-
+boost/multi_array.hpp
+-
+common.hpp
+/home/hc/Desktop/ICP/src/common.hpp
 
 /usr/include/eigen3/Eigen/Cholesky
 Core

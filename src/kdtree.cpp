@@ -55,7 +55,7 @@ struct KDTree
     }
 
 
-    KDTree(PointCloudTPtr& cloudptr, int _dims = 3) : dims(_dims),target(cloudptr)
+    KDTree(const PointCloudTPtr& cloudptr, int _dims = 3) : dims(_dims),target(cloudptr)
     {
         tar = target->getMatrixXfMap(3,4,0).transpose();
         int n = tar.rows();
@@ -100,7 +100,7 @@ struct KDTree
         p.featrue[2] = x2;
         k_close(p,1,1, Q);
         assert(Q.size() == 1);
-        return Q.top().first;
+        return std::sqrt(Q.top().first) ;
 
     }
 
