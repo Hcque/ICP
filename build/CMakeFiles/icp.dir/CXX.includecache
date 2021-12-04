@@ -22,24 +22,6 @@ testLDT.cpp
 kdtree.cpp
 /home/hc/Desktop/ICP/src/kdtree.cpp
 
-/home/hc/Desktop/ICP/src/LDT.cpp
-common.hpp
-/home/hc/Desktop/ICP/src/common.hpp
-omp.h
--
-time.h
--
-iostream
--
-algorithm
--
-boost/multi_array.hpp
--
-Eigen/Core
--
-pcl/common/common.h
--
-
 /home/hc/Desktop/ICP/src/LinearDT.hpp
 common.hpp
 /home/hc/Desktop/ICP/src/common.hpp
@@ -159,8 +141,6 @@ LinearDT.hpp
 /home/hc/Desktop/ICP/src/LinearDT.hpp
 testLDT.cpp
 /home/hc/Desktop/ICP/src/testLDT.cpp
-LDT.cpp
-/home/hc/Desktop/ICP/src/LDT.cpp
 time.h
 -
 cmath

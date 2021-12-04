@@ -19,7 +19,7 @@
 #include "GoIcp.cpp"
 #include "LinearDT.hpp"
 #include "testLDT.cpp"
-#include "LDT.cpp"
+// #include "LDT.cpp"
 
 #include <time.h>
 #include <cmath>
@@ -271,7 +271,7 @@ void _normal(PointCloudTPtr &cloud_target, int file = 0)
 LDT *ldt;
 KDTree *kdt;
 LinearDT *lldt;
-LDT_prev *LDTprev;
+// LDT_prev *LDTprev;
 
 float _X, _Y, _Z;
 

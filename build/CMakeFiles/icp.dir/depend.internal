@@ -3,7 +3,6 @@
 
 CMakeFiles/icp.dir/src/main.cpp.o
  /home/hc/Desktop/ICP/src/GoIcp.cpp
- /home/hc/Desktop/ICP/src/LDT.cpp
  /home/hc/Desktop/ICP/src/LinearDT.hpp
  /home/hc/Desktop/ICP/src/Registration.hpp
  /home/hc/Desktop/ICP/src/SingleThreadIcp.cpp

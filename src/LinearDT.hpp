@@ -4,7 +4,7 @@
 #include <boost/multi_array.hpp>
 #include <tbb/tbb.h>
 
-#define ROUND(x) (int((x) + 0.5))
+// #define ROUND(x) (int((x) + 0.5))
 
 #define GET_MAX(x,y) ((x<y)?y:x)
 
@@ -72,7 +72,7 @@ g_scan[_x][_y][_z]   ++;
         for (auto y = 0u; y < div; y++)
         {
             /* scan1 */
-            if (g_scan[x][y][0] > 0.5) //not zero
+            if (g_scan[x][y][0] ) //not zero
                 grid[x][y][0] = 0.0;
             else
                 grid[x][y][0] = infinity;
@@ -84,7 +84,7 @@ g_scan[_x][_y][_z]   ++;
                     grid[x][y][z] = 1 + grid[x][y][z - 1];
 
             /* scan2 */
-            for (int _z = nCells - 1; _z >= 0; _z--)
+            for (int _z = div - 2; _z >= 0; _z--)
                 if (grid[x][y][_z + 1] < grid[x][y][_z])
                     grid[x][y][_z] = 1 + grid[x][y][_z + 1];
         }
@@ -102,11 +102,11 @@ g_scan[_x][_y][_z]   ++;
         return int((SQ(u) - SQ(i) + SQ(grid[xCoord][u][zCoord]) - SQ(grid[xCoord][i][zCoord])) / (2 * (u - i)));
     };
 
-    tbb::parallel_for(0u, div, [&](int x) {
-        std::vector<int> s(div), t(div);
+    for (int x = 0; x < div; x ++ ) {
 
         for (auto z = 0; z < div; z++)
         {
+            std::vector<int> s(div), t(div);
             auto q = 0;
             s[0] = t[0] = 0;
 
@@ -141,7 +141,7 @@ g_scan[_x][_y][_z]   ++;
                     q--;
             }
         }
-    });
+    }
  
 
     // Third scan
@@ -156,10 +156,11 @@ g_scan[_x][_y][_z]   ++;
         return int((SQ(u) - SQ(i) + g_scan[u][yCoord][zCoord] - g_scan[i][yCoord][zCoord]) / (2 * (u - i)));
     };
 
-    tbb::parallel_for(0u, div, [&](int y) {
-        std::vector<int> s(div), t(div);
+    // tbb::parallel_for(0u, div, [&](int y) {
+    for (int y = 0u; y < div; y ++ ){
         for (auto z = 0; z < div; z++)
         {
+            std::vector<int> s(div), t(div);
             auto q = 0;
             s[0] = t[0] = 0;
 
@@ -193,7 +194,7 @@ g_scan[_x][_y][_z]   ++;
                     q--;
             }
         }
-    });
+    }
 }
 
     float Evaluate(Point3f query)
@@ -213,7 +214,7 @@ g_scan[_x][_y][_z]   ++;
     //         query.data[i] = range.max.data[i];
     //     }
     // }
-using Vector3i = Eigen::Vector3i;
+    using Vector3i = Eigen::Vector3i;
     // Compute discrete coordinate and interpolation ratio in the grid
     // auto relPos = query - _min; // relative position of grid origin
     Vector3i coord;

@@ -1,4 +1,9 @@
 // .. / ,, ()
+// s[q]  s[0]
+
+// while if!!
+
+// no SQ
 
 #pragma once
 
@@ -46,9 +51,7 @@ LDT::LDT(const PointCloudTPtr& _b, uint32_t _div): div(_div)
     cellLen = _fullLen / (float) div;
     std::cerr << "cellLen:" << cellLen << std::endl;
 
-
-
-        for (int i = 0 ; i < _b->points.size(); i ++ )
+    for (int i = 0 ; i < _b->points.size(); i ++ )
     {
         auto _row = _b->points[i];
         auto _x = (int) ( (_row.x - _min.x) / cellLen);
@@ -70,7 +73,7 @@ LDT::LDT(const PointCloudTPtr& _b, uint32_t _div): div(_div)
 
         for (int z = 1; z < div; z ++)
         {
-            if (dt[x][y][z]) g[x][y][z] = 0; //TODO
+            if (dt[x][y][z] ) g[x][y][z] = 0; //TODO
             else g[x][y][z] = g[x][y][z-1] + 1;
         }
         for (int z = div-2; z >= 0; z --)
@@ -78,9 +81,6 @@ LDT::LDT(const PointCloudTPtr& _b, uint32_t _div): div(_div)
             if (g[x][y][z+1] < g[x][y][z] ) g[x][y][z] = 1 + g[x][y][z+1];
         }
     }
-
-
-   
 
    auto f_y  = [&](int y, int u, int x, int z)
     {
@@ -99,13 +99,13 @@ LDT::LDT(const PointCloudTPtr& _b, uint32_t _div): div(_div)
         auto q = 0;
         s[0] = 0, t[0] = 0;
 
-        for (int u = 0; u < div; u ++ ) // loop y
+        for (int u = 1; u < div; u ++ ) // loop y
         {
-            if (q >= 0 && f_y(t[q],s[q],x,z) > f_y(t[q], u, x,z)) q--;
+            while (q >= 0 && f_y(t[q],s[q],x,z) > f_y(t[q], u, x,z)) q--;
 
-            if (q < 0){ q = 0, s[q] = u; }
+            if (q < 0){ q = 0, s[0] = u; } //!
             else {
-                int w = 1 + Sep_y(s[q], u, x, z);
+                auto w = 1 + Sep_y(s[q], u, x, z);
                 if (w < div){
                     q ++ ;
                     t[q] = w;
@@ -127,12 +127,12 @@ LDT::LDT(const PointCloudTPtr& _b, uint32_t _div): div(_div)
 
     auto f_x  = [&](int x, int u, int y, int z)
     {
-        return SQ(x-u) + SQ(dt[u][y][z]);
+        return SQ(x-u) + (dt[u][y][z]);
     };
 
     auto Sep_x = [&](int i, int u, int y, int z)
     {
-        return (int) ( (SQ(u) - SQ(i) + SQ(dt[u][y][z]) - SQ(dt[i][y][z])) / (2 * (u - i) ) );
+        return (int) ( (SQ(u) - SQ(i) + (dt[u][y][z]) - (dt[i][y][z])) / (2 * (u - i) ) );
 
     };
 
@@ -142,11 +142,11 @@ LDT::LDT(const PointCloudTPtr& _b, uint32_t _div): div(_div)
         auto q = 0;
         s[0] = 0, t[0] = 0;
 
-        for (int u = 0; u < div; u ++ ) // loop y
+        for (int u = 1; u < div; u ++ ) // loop y
         {
-            if (q >= 0 && f_x(t[q],s[q],y,z) > f_x(t[q], u, y,z)) q--;
+            while (q >= 0 && f_x(t[q],s[q],y,z) > f_x(t[q], u, y,z)) q--;
 
-            if (q < 0){ q = 0, s[q] = u; }
+            if (q < 0){ q = 0, s[0] = u; }
             else {
                 int w = 1 + Sep_x(s[q], u, y, z);
                 if (w < div){
@@ -166,6 +166,166 @@ LDT::LDT(const PointCloudTPtr& _b, uint32_t _div): div(_div)
         }
 
     }
+
+    //     // Third scan
+    // // This scan is almost identical to scan2.
+    // // Takes g_scan as input, and grid as the output
+    // auto f_x = [&](int yCoord, int zCoord, int xCoord, int xpos) {
+    //     return SQ(xCoord - xpos) + dt[xpos][yCoord][zCoord];
+    // };
+
+    // auto Sep_x = [&](int yCoord, int zCoord, int i, int u) {
+    //     assert(u > i);
+    //     return int((SQ(u) - SQ(i) + dt[u][yCoord][zCoord] - dt[i][yCoord][zCoord]) / (2 * (u - i)));
+    // };
+
+    // // tbb::parallel_for(0u, div, [&](int y) {
+    // for (int y = 0u; y < div; y ++ ){
+    //     for (auto z = 0; z < div; z++)
+    //     {
+    //         std::vector<int> s(div), t(div);
+    //         auto q = 0;
+    //         s[0] = t[0] = 0;
+
+    //         for (auto u = 1; u < div; u++)
+    //         {
+    //             while ((q >= 0) && (f_x(y, z, t[q], s[q]) > f_x(y, z, t[q], u)))
+    //                 q--;
+
+    //             if (q < 0)
+    //             {
+    //                 q = 0;
+    //                 s[0] = u;
+    //             }
+    //             else
+    //             {
+    //                 auto w = 1 + Sep_x(y, z, s[q], u);
+    //                 if (w < div)
+    //                 {
+    //                     q++;
+    //                     s[q] = u;
+    //                     t[q] = w;
+    //                 }
+    //             }
+    //         }
+
+    //         for (int u = div - 1; u >= 0; u--)
+    //         {
+    //             auto point = sqrt(f_x(y, z, u, s[q]));
+    //             g[u][y][z] = point;
+    //             if (u == t[q])
+    //                 q--;
+    //         }
+    //     }
+    // }
+
+
+
+//    // Second scan
+//     // In this scan, grid is the input, and g_scan is the output.
+//     auto f_y = [&](int xCoord, int zCoord, int yCoord, int ypos) {
+//         return SQ(yCoord - ypos) + SQ(g[xCoord][ypos][zCoord]);
+//     };
+
+//     auto Sep_y = [&](int xCoord, int zCoord, int i, int u) {
+//         assert(u > i);
+//         return int((SQ(u) - SQ(i) + SQ(g[xCoord][u][zCoord]) - SQ(g[xCoord][i][zCoord])) / (2 * (u - i)));
+//     };
+
+//     for (int x = 0; x < div; x ++ ) {
+
+//         for (auto z = 0; z < div; z++)
+//         {
+//             std::vector<int> s(div), t(div);
+//             auto q = 0;
+//             s[0] = t[0] = 0;
+
+//             for (auto u = 1; u < div; u++)
+//             {
+            
+//                 while ((q >= 0) && (f_y(x, z, t[q], s[q]) > f_y(x, z, t[q], u)))
+//                     q--;
+
+//                 if (q < 0)
+//                 {
+//                     q = 0;
+//                     s[0] = u;
+//                 }
+//                 else
+//                 {
+//                     auto w = 1 + Sep_y(x, z, s[q], u);
+//                     if (w < div)
+//                     {
+//                         q++;
+//                         s[q] = u;
+//                         t[q] = w;
+//                     }
+//                 }
+//             }
+
+//             for (int u = div - 1; u >= 0; u--)
+//             {
+//                 auto point = f_y(x, z, u, s[q]);
+//                 dt[x][u][z] = point;
+//                 if (u == t[q])
+//                     q--;
+//             }
+//         }
+//     }
+ 
+
+    // // Third scan
+    // // This scan is almost identical to scan2.
+    // // Takes g_scan as input, and grid as the output
+    // auto f_x = [&](int yCoord, int zCoord, int xCoord, int xpos) {
+    //     return SQ(xCoord - xpos) + dt[xpos][yCoord][zCoord];
+    // };
+
+    // auto Sep_x = [&](int yCoord, int zCoord, int i, int u) {
+    //     assert(u > i);
+    //     return int((SQ(u) - SQ(i) + dt[u][yCoord][zCoord] - dt[i][yCoord][zCoord]) / (2 * (u - i)));
+    // };
+
+    // // tbb::parallel_for(0u, div, [&](int y) {
+    // for (int y = 0u; y < div; y ++ ){
+    //     for (auto z = 0; z < div; z++)
+    //     {
+    //         std::vector<int> s(div), t(div);
+    //         auto q = 0;
+    //         s[0] = t[0] = 0;
+
+    //         for (auto u = 1; u < div; u++)
+    //         {
+    //             while ((q >= 0) && (f_x(y, z, t[q], s[q]) > f_x(y, z, t[q], u)))
+    //                 q--;
+
+    //             if (q < 0)
+    //             {
+    //                 q = 0;
+    //                 s[0] = u;
+    //             }
+    //             else
+    //             {
+    //                 auto w = 1 + Sep_x(y, z, s[q], u);
+    //                 if (w < div)
+    //                 {
+    //                     q++;
+    //                     s[q] = u;
+    //                     t[q] = w;
+    //                 }
+    //             }
+    //         }
+
+    //         for (int u = div - 1; u >= 0; u--)
+    //         {
+    //             auto point = sqrt(f_x(y, z, u, s[q]));
+    //             g[u][y][z] = point;
+    //             if (u == t[q])
+    //                 q--;
+    //         }
+    //     }
+    // }
+
 
 }
 
