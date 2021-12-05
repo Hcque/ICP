@@ -8,14 +8,9 @@
 #include <queue>
 #include "common.hpp"
 #include "jly_3ddt.h"
-// #include "LinearDT.hpp"
-
-// #include "jly_icp3d.hpp"
-// #include "jly_3ddt.cpp"
 
 #include "SingleThreadIcp.cpp"
 // #include "DT.cpp"
-// #include "LDT.cpp"
 #include "testLDT.cpp"
 #include "kdtree.cpp"
 
@@ -76,7 +71,7 @@ public:
 	float * maxRotDis;
     std::vector<float> minDis;
     std::vector<Point3f> pDataTemp;
-	ICP3D<float> icp3d;
+	// ICP3D<float> icp3d;
     SingleThreadIcp icp;
     // KDTree dt;
     // DT dt;

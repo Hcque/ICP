@@ -3,16 +3,12 @@
 
 CMakeFiles/icp.dir/src/main.cpp.o
  /home/hc/Desktop/ICP/src/GoIcp.cpp
- /home/hc/Desktop/ICP/src/LinearDT.hpp
  /home/hc/Desktop/ICP/src/Registration.hpp
  /home/hc/Desktop/ICP/src/SingleThreadIcp.cpp
  /home/hc/Desktop/ICP/src/common.hpp
  /home/hc/Desktop/ICP/src/jly_3ddt.h
- /home/hc/Desktop/ICP/src/jly_icp3d.cpp
  /home/hc/Desktop/ICP/src/kdtree.cpp
  /home/hc/Desktop/ICP/src/main.cpp
- /home/hc/Desktop/ICP/src/matrix.h
- /home/hc/Desktop/ICP/src/nanoflann.hpp
  /home/hc/Desktop/ICP/src/testLDT.cpp
  /usr/include/eigen3/Eigen/Cholesky
  /usr/include/eigen3/Eigen/Core

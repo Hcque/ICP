@@ -3,7 +3,7 @@
 
 // while if!!
 
-// no SQ
+// no SQ with the thread round but diff 2!!
 
 #pragma once
 

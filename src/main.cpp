@@ -12,14 +12,9 @@
 #include <vtkCamera.h>
 
 #include "SingleThreadIcp.cpp"
-#include "jly_3ddt.h"
-
-#include "jly_icp3d.cpp"
 #include "common.hpp"
 #include "GoIcp.cpp"
-#include "LinearDT.hpp"
 #include "testLDT.cpp"
-// #include "LDT.cpp"
 
 #include <time.h>
 #include <cmath>
@@ -52,24 +47,16 @@ void loadFile(const char* file_name, PointCloudT &cloud)
 	pcl::removeNaNFromPointCloud(cloud, cloud, index);
 }
 
-// void testkdtree(int II)
-// {
-	
-// 	auto singleICP = new SingleThreadIcp(cloud_source, cloud_target, 1);
-
-//      singleICP->test_kdtree(II);
-
-// }
 
 void test_icp(int ite){
-clockBegin = clock();
+	clockBegin = clock();
 	auto singleICP = new SingleThreadIcp(cloud_source, cloud_target,ite);
 	Matrix4d tmpMat = Eigen::Matrix4d::Identity();
     ICP_res icpres = singleICP->registration(tmpMat, cloud_source);
 	auto source_trans_matrix = icpres.resN3;
 
 
-clockEnd = clock();
+	clockEnd = clock();
     cout << (double) (clockEnd - clockBegin) / CLOCKS_PER_SEC << "\n" << endl;
 
 
@@ -120,12 +107,10 @@ void test_goicp(int ite){
 	auto goicp = new GoIcp(cloud_target, cloud_source, ite);
 	goicp->sseThresh = mse;
 
-	// std::cout << "Building Distance Transform...\n";
+	std::cout << "Building Distance Transform...\n";
 	// goicp->BuildDT();
-	clockEnd = clock();
-	cout << (double)(clockEnd - clockBegin)/CLOCKS_PER_SEC << "s (CPU)" << endl;
+	// cout << (double)(clockEnd - clockBegin)/CLOCKS_PER_SEC << "s (CPU)" << endl;
 
-	return;
      auto icpres = goicp->registration();
     cout << (double) (clockEnd - clockBegin) / CLOCKS_PER_SEC << "\n" << endl;
 
@@ -266,19 +251,14 @@ void _normal(PointCloudTPtr &cloud_target, int file = 0)
 
 // }
 
-
-
 LDT *ldt;
 KDTree *kdt;
-LinearDT *lldt;
-// LDT_prev *LDTprev;
 
 float _X, _Y, _Z;
 
 void test_LinearDT(const PointCloudTPtr& pModel)
 {
 	clock_t  clockBegin, clockEnd;
-
 	cout << "building dt(s):";
     clockBegin = clock();
     ldt = new LDT(pModel, 100); 
@@ -286,10 +266,7 @@ void test_LinearDT(const PointCloudTPtr& pModel)
     kdt = new KDTree(pModel); 
     clockEnd = clock();
     cout << (double) (clockEnd - clockBegin) / CLOCKS_PER_SEC << "\n" << endl;
-	lldt = new LinearDT(pModel);
-	int cc = 0;
-	int cc3 = 0;
-	int cc5 = 0;
+	// lldt = new LinearDT(pModel);
 
 	for (auto& pp: cloud_source->points){
 		_X = pp.x;
@@ -299,7 +276,7 @@ void test_LinearDT(const PointCloudTPtr& pModel)
 		float res1, res2, res3, res4;
 
 		res1 = ldt->Distance(_X, _Y, _Z) ;
-		res2 = lldt->Evaluate(Point3f(_X, _Y, _Z)) ;
+		// res2 = lldt->Evaluate(Point3f(_X, _Y, _Z)) ;
 		res3 = kdt->Distance(_X, _Y, _Z) ;
 		// res4 = LDTprev->Distance(_X, _Y, _Z) ;
 		// if (std::fabs(res1 - res2)  > 1.732 * 2 *  ldt->cellLen ) cc ++;
@@ -310,21 +287,10 @@ void test_LinearDT(const PointCloudTPtr& pModel)
 		std::cerr << res1 << "||" << res2   << "||" << res3 << "||\n" ; // << res4 <<  "\n";
 		
 	}
-	// std::cerr << cc << "\n";
-	// std::cerr << (float)cc / cloud_source->points.size() << "\n";
-	// std::cerr << cc3 << "\n";
-	// std::cerr << (float)cc3 / cloud_source->points.size() << "\n";
-	// std::cerr << cc5 << "\n";
-	// std::cerr << (float)cc5 / cloud_source->points.size() << "\n";
-	
-	
 }
-
-
 
 int main(int argc, char**argv)
 {
-	
     // if (argc != 4) 
     // {
     //     std::cerr << "./a input1 input2 iter" << "\n";
@@ -373,8 +339,8 @@ int main(int argc, char**argv)
 	// testkdtree(atoi(argv[3]));
 	// test_icp(atoi(argv[3]));
 
-	// test_goicp(atoi(argv[3]));
-	test_LinearDT(cloud_target);
+	test_goicp(atoi(argv[3]));
+	// test_LinearDT(cloud_target);
     
     return 0;
 }
