@@ -71,12 +71,8 @@ public:
 	float * maxRotDis;
     std::vector<float> minDis;
     std::vector<Point3f> pDataTemp;
-	// ICP3D<float> icp3d;
     SingleThreadIcp icp;
-    // KDTree dt;
-    // DT dt;
-    // LinearDT dt;
-	// DT3D dt;
+    
     LDT dt;
     int ITER;
 };
@@ -105,47 +101,6 @@ GoIcp::GoIcp(PointCloudTPtr pModel, PointCloudTPtr pData, int _iter, double _mse
 //    mseThresh = 0.001;
 
 }
-
-// Build Distance Transform
-void GoIcp::BuildDT()
-{
-	// double* x = (double*)malloc(sizeof(double)*Nm);
-	// double* y = (double*)malloc(sizeof(double)*Nm);
-	// double* z = (double*)malloc(sizeof(double)*Nm);
-	// for(int i = 0; i < Nm; i++)
-	// {
-	// 	x[i] = pModel->points[i].x;
-	// 	y[i] = pModel->points[i].y;
-	// 	z[i] = pModel->points[i].z;
-	// 	if (i % 10000 == 0) std::cerr << Nm << "NM" <<  x[i] << "|" << y[i] << z[i] << "\n";
-	// }
-	// dt.Build(x, y, z, Nm);
-	// delete(x);
-	// delete(y);
-	// delete(z);
-}
-
-// // Build Distance Transform
-// void GoIcp::BuildDT()
-// {
-// 	double* x = (double*)malloc(sizeof(double)*Nm);
-// 	double* y = (double*)malloc(sizeof(double)*Nm);
-// 	double* z = (double*)malloc(sizeof(double)*Nm);
-// 	for(int i = 0; i < Nm; i++)
-// 	{
-// 		x[i] = pModel->points[i].x;
-// 		y[i] = pModel->points[i].y;
-// 		z[i] = pModel->points[i].z;
-//         // x[i] = 0.5;
-// 		// y[i] = 0.5;
-// 		// z[i] = 0.5;
-//         if (i % 10000 == 0) std::cerr << Nm << "Nm|" << x[i] << "||" << y[i] << "||" << z[i]  << endl;
-// 	}
-// 	dt.Build(x, y, z, Nm);
-// 	delete(x);
-// 	delete(y);
-// 	delete(z);
-// }
 
 // Run ICP and calculate sum squared L2 error
 float GoIcp::runICP(Matrix4d& tmpMat) {
@@ -407,7 +362,6 @@ float GoIcp::OuterBnB()
 float GoIcp::innerBnB(float *maxRotDistL, TransNode* transOut)
 {
     // std::cerr << "start inner Bnb\n";
-
     int i,j;
     float transX, transY, transZ;
     float optErrorT;

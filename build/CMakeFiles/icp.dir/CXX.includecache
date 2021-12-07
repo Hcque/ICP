@@ -59,6 +59,8 @@ vector
 -
 fstream
 -
+omp.h
+-
 
 /home/hc/Desktop/ICP/src/common.hpp
 iostream
@@ -137,6 +139,8 @@ boost/multi_array.hpp
 -
 common.hpp
 /home/hc/Desktop/ICP/src/common.hpp
+omp.h
+-
 
 /usr/include/eigen3/Eigen/Cholesky
 Core

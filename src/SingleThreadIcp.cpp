@@ -24,13 +24,16 @@
 #include <unordered_map>
 #include <vector>
 #include <fstream>
+#include <omp.h>
 
 namespace icp
 {
 
+
 struct Correspondance
 {
-    std::unordered_map<int, int> points;
+    std::vector<int> points;
+    std::unordered_map<int,int> points2;
     Matrix3d covariance;
 };
 
@@ -46,6 +49,7 @@ public:
         Nm = target->points.size();
         tempData = src;
         cal_mean(tempData,mean_tmpdata);
+        Neighbour.points.resize(Nd);
     }
     ~SingleThreadIcp() {}
 
@@ -59,6 +63,7 @@ public:
         tempData = src;
         Nd = source->points.size();
         cal_mean(tempData,mean_tmpdata);
+        Neighbour.points.resize(Nd);
     }
 
     virtual ICP_res registration(Matrix4d&, const PointCloudTPtr&);
@@ -68,6 +73,7 @@ public:
     void kdtree_search();
     Matrix4d& best_fit_transform();
     void test_kdtree(int );
+    void test_kdtree_para(int );
 
     PointCloudTPtr source, target;
     Eigen::MatrixXd src, tar, tempData;
@@ -80,25 +86,21 @@ public:
     KDTree kdt;
 };
 
-/*
 void SingleThreadIcp:: test_kdtree(int II){
     std::cerr << "test kd tree correctness \n ";
     int r = src.rows();
     std::cerr << src.rows() << "|rows|" << tar.rows() << "\n";
 
-    std::ofstream out("./points.txt");
-    std::ofstream diff("./diff.txt");
+    // std::ofstream out("./points.txt");
+    // std::ofstream diff("./diff.txt");
 
-    Neighbour.points.clear();
     // omp_set_num_threads(2);
 
-    #pragma omp parallel
-    {
-    #pragma omp for
+//    #pragma omp parallel for schedule (static)
    for (int i = 0 ; i < src.rows(); i ++ ) 
    {
-       if (i != II) continue;
-        if (i % 100 == 0) 
+    //    if (i != II) continue;
+        if (i % 10000 == 0) 
             std::cerr << "i" << i << "\n";
         // Vector3f v1;
 		// for(int d=0; d<3; d++)
@@ -134,6 +136,59 @@ void SingleThreadIcp:: test_kdtree(int II){
 
     }
 
+
+
+void SingleThreadIcp:: test_kdtree_para(int II){
+    std::cerr << "test kd tree correctness \n ";
+    int r = src.rows();
+    std::cerr << src.rows() << "|rows|" << tar.rows() << "\n";
+
+    // std::ofstream out("./points.txt");
+    // std::ofstream diff("./diff.txt");
+
+    // omp_set_num_threads(2);
+
+//    #pragma omp parallel for schedule (static)
+   for (int i = 0 ; i < src.rows(); i ++ ) 
+   {
+    //    if (i != II) continue;
+        if (i % 10000 == 0) 
+            std::cerr << "i" << i << "\n";
+        // Vector3f v1;
+		// for(int d=0; d<3; d++)
+		// 	v1[d] = src(i,d);
+        auto v1 = src.block<1,3>(i,0).transpose();
+        int j_kdtree = kdt.get_closest(v1);
+        // Neighbour.points[i] = j;
+        // std::cerr << i << "|pair|" << j << std::endl;
+          double min_dist = 1e9;
+       for (int k = 0; k < tar.rows(); k ++ )
+       {
+            auto v2 = tar.block<1,3>(k,0).transpose();
+            double get_dist = Dist(v1,v2);
+            // std::cerr << "get_dist" << get_dist << "\n";
+            if (get_dist < min_dist) 
+            {
+                min_dist = get_dist; 
+                Neighbour.points[i] = k;
+                // std::cerr << i << "|pair|" << k << " min_dist:" <<  min_dist << std::endl;
+            }
+       }
+        // out << i << " " << Neighbour.points[i] << "|mindist:" << min_dist << "\n";
+        std::cerr << i << "truth:" << Neighbour.points[i] << "|mindist:" << min_dist << "\n";
+    //    std::cerr << Neighbour.points[i] << " " <<  j_kdtree << "\n";
+       if (Neighbour.points[i] !=  j_kdtree){
+            diff << "DIFF!:" << i << " " <<  Neighbour.points[i] << " " <<  j_kdtree << "\n";
+            std::cerr << "DIFF!:" << i <<  " kdi:| " <<  j_kdtree << "kd_Dist:" << kdt.Q.top().first << "\n";
+       }
+
+   }
+
+    } // omp
+
+    }
+
+
 void SingleThreadIcp::naive_search()
 {
     Neighbour.points.clear();
@@ -160,19 +215,16 @@ void SingleThreadIcp::naive_search()
        }
    }
 }
-*/
 
 void SingleThreadIcp::kdtree_search()
 {
-    Neighbour.points.clear();
+    // Neighbour.points.clear();
     
     omp_set_num_threads(NUM_TH);
-    // omp_set_dynamic(0);
     std::cerr <<  "omp # of procs: " << omp_get_num_procs() << "\n";
     std::cerr <<  "omp # of threads: " << omp_get_num_threads() << "\n";
-    #pragma omp parallel
-    {
-    #pragma omp for
+
+   #pragma omp parallel for
    for (int i = 0 ; i < Nd; i ++ ) 
    {
         // if (i % 10000 == 0) 
@@ -185,14 +237,101 @@ void SingleThreadIcp::kdtree_search()
         auto v1 = tempData.block<1,3>(i,0).transpose();
         // std::cerr << "i" << tempData.block<1,3>(i,0) << "\n";
         int j = kdt.get_closest(v1);
-        #pragma omp critical
-        {
         Neighbour.points[i] = j;
-        }
         // std::cerr << i << "|pair|" << j << std::endl;
    }
 
-    } // omp
+    // } // omp
+    assert(Neighbour.points.size() == Nd);
+//    delete kdt;
+}
+
+
+void SingleThreadIcp::kdtree_search()
+{
+    // Neighbour.points.clear();
+    
+    omp_set_num_threads(NUM_TH);
+    std::cerr <<  "omp # of procs: " << omp_get_num_procs() << "\n";
+    std::cerr <<  "omp # of threads: " << omp_get_num_threads() << "\n";
+
+   #pragma omp parallel for
+   for (int i = 0 ; i < Nd; i ++ ) 
+   {
+        // if (i % 10000 == 0) 
+        // {
+        //     std::cerr << "i" << i << "\n";
+        //     std::cerr <<  "THEreads: " << omp_get_thread_num() << "\n";
+        //     std::cerr <<  "omp # of threads: " << omp_get_num_threads() << "\n";
+        // }
+       
+        auto v1 = tempData.block<1,3>(i,0).transpose();
+        // std::cerr << "i" << tempData.block<1,3>(i,0) << "\n";
+        int j = kdt.get_closest(v1);
+        Neighbour.points[i] = j;
+        // std::cerr << i << "|pair|" << j << std::endl;
+   }
+
+    // } // omp
+    assert(Neighbour.points.size() == Nd);
+//    delete kdt;
+}
+
+
+void SingleThreadIcp::kdtree_singleTH_search()
+{
+    Neighbour.points2.clear();
+    
+   for (int i = 0 ; i < Nd; i ++ ) 
+   {
+        // if (i % 10000 == 0) 
+        // {
+        //     std::cerr << "i" << i << "\n";
+        //     std::cerr <<  "THEreads: " << omp_get_thread_num() << "\n";
+        //     std::cerr <<  "omp # of threads: " << omp_get_num_threads() << "\n";
+        // }
+       
+        auto v1 = tempData.block<1,3>(i,0).transpose();
+        // std::cerr << "i" << tempData.block<1,3>(i,0) << "\n";
+        int j = kdt.get_closest(v1);
+        Neighbour.points2[i] = j;
+        // std::cerr << i << "|pair|" << j << std::endl;
+   }
+
+    // } // omp
+    assert(Neighbour.points.size() == Nd);
+//    delete kdt;
+}
+
+
+
+
+void SingleThreadIcp::kdtree_search()
+{
+    // Neighbour.points.clear();
+    
+    omp_set_num_threads(NUM_TH);
+    std::cerr <<  "omp # of procs: " << omp_get_num_procs() << "\n";
+    std::cerr <<  "omp # of threads: " << omp_get_num_threads() << "\n";
+
+   #pragma omp parallel for
+   for (int i = 0 ; i < Nd; i ++ ) 
+   {
+        // if (i % 10000 == 0) 
+        // {
+        //     std::cerr << "i" << i << "\n";
+        //     std::cerr <<  "THEreads: " << omp_get_thread_num() << "\n";
+        //     std::cerr <<  "omp # of threads: " << omp_get_num_threads() << "\n";
+        // }
+       
+        auto v1 = tempData.block<1,3>(i,0).transpose();
+        // std::cerr << "i" << tempData.block<1,3>(i,0) << "\n";
+        int j = kdt.get_closest(v1);
+        Neighbour.points[i] = j;
+        // std::cerr << i << "|pair|" << j << std::endl;
+   }
+
+    // } // omp
     assert(Neighbour.points.size() == Nd);
 //    delete kdt;
 }

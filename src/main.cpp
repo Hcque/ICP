@@ -202,91 +202,38 @@ void _normal(PointCloudTPtr &cloud_target, int file = 0)
 }
 
 
-// void testDT(const PointCloudTPtr& pModel)
-// {
-// 	    clock_t  clockBegin, clockEnd;
-// 	// dt.SIZE = 300;
-
-// 	 cout << "building dt(s):";
-//     clockBegin = clock();
-//     // LinearDT dt(pModel); 
-//     // auto x = std::make_unique<double[]>(2);
-//     // auto y = std::make_unique<double[]>(2);
-//     // auto z = std::make_unique<double[]>(2);
-// 	// int i = 0;
-//     //     x[i] = -0.5; y[i] = -0.5; z[i] = -0.5;
-//     //     i = 1; x[i] = 0.5; y[i] = 0.5; z[i] = 0.5;
-//     // dt.Build(x.get(), y.get(), z.get(), 2);
-//     clockEnd = clock();
-//     cout << (double) (clockEnd - clockBegin) / CLOCKS_PER_SEC << "\n" << endl;
-// 	std:: cerr << dt.Distance(0.1,0.1,0.1) << "\n";
-
-
-// 	//  cout << "building dt(s):";
-//     // clockBegin = clock();
-//     // // auto x = std::make_unique<double[]>(pModel->size());
-//     // // auto y = std::make_unique<double[]>(pModel->size());
-//     // // auto z = std::make_unique<double[]>(pModel->size());
-//     // for (int i = 0; i < pModel->points.size(); i++) {
-//     //     x[i] = pModel->points[i].x;
-//     //     y[i] = pModel->points[i].y;
-//     //     z[i] = pModel->points[i].z;
-//     // }
-//     // dt.Build(x.get(), y.get(), z.get(), pModel->points.size());
-//     // clockEnd = clock();
-//     // cout << (double) (clockEnd - clockBegin) / CLOCKS_PER_SEC << "\n" << endl;
-// 	// std:: cerr << dt.Distance(0.1,0.1,0.1);
-
-//     // cout << "building dt(by wzh)(s):";
-//     // clockBegin = clock();
-//     // NaiveDT df(pModel);
-//     // clockEnd = clock();
-//     // cout << (double) (clockEnd - clockBegin) / CLOCKS_PER_SEC << "\n" << endl;
-
-//     // cout << "building dt(by lq)(s):";
-//     // clockBegin = clock();
-//     // LinearDT ldt(pModel);
-//     // clockEnd = clock();
-//     // cout << (double) (clockEnd - clockBegin) / CLOCKS_PER_SEC << "\n" << endl;
-
-// }
-
 LDT *ldt;
 KDTree *kdt;
 
 float _X, _Y, _Z;
-
+int CORES_ ;
 void test_LinearDT(const PointCloudTPtr& pModel)
 {
-	clock_t  clockBegin, clockEnd;
-	cout << "building dt(s):";
-    clockBegin = clock();
-    ldt = new LDT(pModel, 100); 
-	// LDTprev = new LDT_prev(pModel);
-    kdt = new KDTree(pModel); 
-    clockEnd = clock();
-    cout << (double) (clockEnd - clockBegin) / CLOCKS_PER_SEC << "\n" << endl;
+    ldt = new LDT(pModel, 100, CORES_); 
+    ldt = new LDT(pModel, 200, CORES_); 
+    ldt = new LDT(pModel, 300, CORES_ ); 
+    // kdt = new KDTree(pModel); 
 	// lldt = new LinearDT(pModel);
 
-	for (auto& pp: cloud_source->points){
-		_X = pp.x;
-		_Y = pp.y;
-		_Z = pp.z;
+	// for (auto& pp: cloud_source->points){
+	// 	_X = pp.x;
+	// 	_Y = pp.y;
+	// 	_Z = pp.z;
 
-		float res1, res2, res3, res4;
+	// 	float res1, res2, res3, res4;
 
-		res1 = ldt->Distance(_X, _Y, _Z) ;
-		// res2 = lldt->Evaluate(Point3f(_X, _Y, _Z)) ;
-		res3 = kdt->Distance(_X, _Y, _Z) ;
-		// res4 = LDTprev->Distance(_X, _Y, _Z) ;
-		// if (std::fabs(res1 - res2)  > 1.732 * 2 *  ldt->cellLen ) cc ++;
-		// if (std::fabs(res1 - res2)  > 1.732 * 2 *  ldt->cellLen ) cc ++;
-		// if (std::fabs(res1 - res2)  > 1.732 * 3 *  ldt->cellLen ) cc3 ++;
-		// if (std::fabs(res1 - res2)  > 1.732 * 5 *  ldt->cellLen ) cc5 ++;
+	// 	res1 = ldt->Distance(_X, _Y, _Z) ;
+	// 	// res2 = lldt->Evaluate(Point3f(_X, _Y, _Z)) ;
+	// 	// res3 = kdt->Distance(_X, _Y, _Z) ;
+	// 	// res4 = LDTprev->Distance(_X, _Y, _Z) ;
+	// 	// if (std::fabs(res1 - res2)  > 1.732 * 2 *  ldt->cellLen ) cc ++;
+	// 	// if (std::fabs(res1 - res2)  > 1.732 * 2 *  ldt->cellLen ) cc ++;
+	// 	// if (std::fabs(res1 - res2)  > 1.732 * 3 *  ldt->cellLen ) cc3 ++;
+	// 	// if (std::fabs(res1 - res2)  > 1.732 * 5 *  ldt->cellLen ) cc5 ++;
 
-		std::cerr << res1 << "||" << res2   << "||" << res3 << "||\n" ; // << res4 <<  "\n";
+	// 	std::cerr << res1 << "||" << res2   << "||" << res3 << "||\n" ; // << res4 <<  "\n";
 		
-	}
+	// }
 }
 
 int main(int argc, char**argv)
@@ -301,7 +248,7 @@ int main(int argc, char**argv)
     cloud_target  = PointCloudTPtr(new PointCloudT());
     loadFile(argv[1], *cloud_source);
     loadFile(argv[2], *cloud_target);
-	// _X = atof(argv[3]);
+	CORES_ = atoi(argv[3]);
 	// _Y = atof(argv[4]);
 	// _Z = atof(argv[5]);
 
@@ -339,8 +286,8 @@ int main(int argc, char**argv)
 	// testkdtree(atoi(argv[3]));
 	// test_icp(atoi(argv[3]));
 
-	test_goicp(atoi(argv[3]));
-	// test_LinearDT(cloud_target);
+	// test_goicp(atoi(argv[3]));
+	test_LinearDT(cloud_target);
     
     return 0;
 }
