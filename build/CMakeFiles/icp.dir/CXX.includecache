@@ -129,6 +129,8 @@ cmath
 -
 fstream
 -
+omp.h
+-
 
 /home/hc/Desktop/ICP/src/testLDT.cpp
 iostream

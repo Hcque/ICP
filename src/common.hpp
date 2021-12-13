@@ -102,6 +102,24 @@ inline float MaxComp(const Vector3f& v) {
     return std::max(std::max(v.x(), v.y()), v.z());
 }
 
+Point3f operator+(const Point3f& a, const Point3f& b)
+{
+    Point3f ans;
+    ans.x = a.x + b.x ;
+    ans.y = a.y + b.y ;
+    ans.z = a.z + b.z ;
+    return ans;
+}
+
+Point3f operator/(const Point3f& a, int b)
+{
+    Point3f ans;
+    ans.x = a.x / b;
+    ans.y = a.y / b;
+    ans.z = a.z / b;
+    return ans;
+}
+
 struct Bound3f {
     Point3f min, max;
 

@@ -73,7 +73,8 @@ public:
     std::vector<Point3f> pDataTemp;
     SingleThreadIcp icp;
     
-    LDT dt;
+    // LDT dt;
+    KDTree dt;
     int ITER;
 };
 
@@ -98,8 +99,6 @@ GoIcp::GoIcp(PointCloudTPtr pModel, PointCloudTPtr pData, int _iter, double _mse
    pDataTemp.resize(Nd);
    minDis.resize(Nd);
 
-//    mseThresh = 0.001;
-
 }
 
 // Run ICP and calculate sum squared L2 error
@@ -111,22 +110,21 @@ float GoIcp::runICP(Matrix4d& tmpMat) {
 
     // Transform point cloud and use DT to determine the L2 error
     std::vector<float> error(Nd);
-    std::cerr << icp_result.resN3.rows() << "|run ICP|" << icp_result.resN3.cols() << "\n";
     
-    // kdt = new kdt(icp_result.resN3);
+    // auto kdt = new KDTree(pModel);
 
-    omp_set_num_threads(4);
+    omp_set_num_threads(2);
     #pragma omp parallel
     {
     #pragma omp for
     for(int i = 0; i < Nd; i ++) {
         // pDataTemp[i]
         auto ptemp = icp_result.resN3.block<1,3>(i,0);
+        // float dis2 = dt.Distance(ptemp[0], ptemp[1], ptemp[2]);
         float dis = dt.Distance(ptemp[0], ptemp[1], ptemp[2]);
-        // float dis = kdt.Distance(ptemp[0], ptemp[1], ptemp[2]);
-        // std::cerr << dis << " ";
+        // std::cerr << dis << " " << dis2 << "\n";
         error[i] = dis * dis;
-        if (i % 10000 == 0) std::cerr << i << "|ERROR|" << error[i] << "\n";
+        // if (i % 10000 == 0) std::cerr << i << "|ERROR|" << error[i] << "\n";
     }
     } // omp
     // delete kdt;
@@ -134,7 +132,8 @@ float GoIcp::runICP(Matrix4d& tmpMat) {
     float SSE = 0.0f;
     for (int i = 0; i < Nd; i++)
         SSE += error[i];
-    std::cerr << "ICP error: " << SSE << "\n";
+    std::cerr << "ICP error SSE: " << SSE << "\n";
+    std::cerr << "ICP error MSE: " << SSE / (float)Nd << "\n";
     return SSE;
 }
 
@@ -158,16 +157,13 @@ float GoIcp::OuterBnB()
 
     optError = 0;
     // cal min dist & optError
-    omp_set_num_threads(4);
-    #pragma omp parallel
-    {
-    #pragma omp for
+    omp_set_num_threads(2);
+    #pragma omp parallel for
     for (int i = 0; i < Nd; i ++){
         minDis[i] = dt.Distance(pData->points[i].x, pData->points[i].y, pData->points[i].z);
-        if (i % 10000 == 0)
-            std::cerr << "mindist outer: " << minDis[i] << " ";
+        // if (i % 10000 == 0)
+        //     std::cerr << "mindist outer: " << minDis[i] << " ";
     }
-    } // omp
 
     for(i = 0; i < Nd; i++)
 	{
@@ -177,7 +173,6 @@ float GoIcp::OuterBnB()
 
     auto tmpMat = optMat;
     // run ICP
-	clockBeginICP = clock();
     error = runICP(tmpMat);
     
     if(error < optError)
@@ -190,6 +185,7 @@ float GoIcp::OuterBnB()
 		cout << "ICP-ONLY Rotation Matrix + Translation Vector:" << endl;
 		cout << optMat << endl;
 	}
+    return 0.0f;
 
     que.push(InitRot);
 
@@ -205,14 +201,14 @@ float GoIcp::OuterBnB()
 
         nodeRotParent = que.top(); que.pop();
 
-        // if (optError - nodeRotParent.lb < sseThresh)
-        // {
-        //     cout << "Error*: " << optError << ", LB: " << nodeRotParent.lb << ", epsilon: " << sseThresh << endl;
-		// 	break;
-        // }
+        if (optError - nodeRotParent.lb < sseThresh)
+        {
+            cout << "Error*: " << optError << ", LB: " << nodeRotParent.lb << ", epsilon: " << sseThresh << endl;
+			break;
+        }
 
-        if (count == ITER) break;
-        // if(count>0 && count%30 == 0)
+        // if (count == ITER) break;
+        if(count>0 && count%30 == 0)
         {
 			printf("LB=%f  Level=%d ========\n",nodeRotParent.lb,nodeRotParent.l);
 
@@ -225,7 +221,7 @@ float GoIcp::OuterBnB()
         nodeRot.w = nodeRotParent.w / 2;
 		for(j = 0; j < 8; j++)
 		{
-            std::cerr << j << "out each cube\n";
+            // std::cerr << j << "out each cube\n";
 		  // Calculate the smallest rotation across each dimension
 			nodeRot.a = nodeRotParent.a + (j&1)*nodeRot.w ;
 			nodeRot.b = nodeRotParent.b + (j>>1&1)*nodeRot.w ;
@@ -264,10 +260,8 @@ float GoIcp::OuterBnB()
 				R31 = tmp131 - tmp132;		R32 = tmp231 + tmp232;		R33 = ct + v3*v3*ct2;
 
 				// Rotate data points by subcube rotation matrix
-                omp_set_num_threads(4);
-                #pragma omp parallel
-                {
-                #pragma omp for
+                omp_set_num_threads(2);
+                #pragma omp parallel for
 				for(i = 0; i < Nd; i++)
 				{
 					Point3f& p = pData->points[i];
@@ -275,16 +269,12 @@ float GoIcp::OuterBnB()
 					pDataTemp[i].y = R21*p.x + R22*p.y + R23*p.z;
 					pDataTemp[i].z = R31*p.x + R32*p.y + R33*p.z;
 				}
-                } // omp
 			}
             else
             {
-                omp_set_num_threads(4);
-                #pragma omp parallel
-                {
-                #pragma omp for
+                omp_set_num_threads(2);
+                #pragma omp parallel for
                 for (int i = 0; i < pDataTemp.size(); i ++ ) pData->points[i] = pDataTemp[i];
-                } // omp
             }
 
             // inner Bnb for ub
@@ -303,15 +293,15 @@ float GoIcp::OuterBnB()
 				optMat(1,3) = optNodeTrans.y+optNodeTrans.w/2;
 				optMat(2,3) = optNodeTrans.z+optNodeTrans.w/2;
 
-				cout << "Error*: " << optError << endl;
-                cout << "optMat after 1st innerBnb: " << "\n" << optMat << endl;
+				// cout << "Error*: " << optError << endl;
+                // cout << "optMat after 1st innerBnb: " << "\n" << optMat << endl;
 
 				// Run ICP
 				clockBeginICP = clock();
 				// R_icp = optR;
 				// t_icp = optT;
                 tmpMat = optMat;
-                std::cerr << "run inner ICP \n" ;
+                // std::cerr << "run inner ICP \n" ;
 				error = runICP(tmpMat);
 				//Our ICP implementation uses kdtree for closest distance computation which is slightly different from DT approximation, 
 				//thus it's possible that ICP failed to decrease the DT error. This is no big deal as the difference should be very small.
@@ -320,7 +310,7 @@ float GoIcp::OuterBnB()
 					optError = error;
 					optMat = tmpMat;
 					
-					cout << "Error*: " << error << "(ICP " << (double)(clock() - clockBeginICP)/CLOCKS_PER_SEC << "s)" << endl;
+					// cout << "update Error*: " << error << "(ICP " << (double)(clock() - clockBeginICP)/CLOCKS_PER_SEC << "s)" << endl;
 				}
 
 				// Discard all rotation nodes with high lower bounds in the queue
@@ -342,7 +332,7 @@ float GoIcp::OuterBnB()
 
             nodeRot.lb = lb;
             nodeRot.ub = ub;
-            std::cerr << nodeRot.lb << "|lb OUTER BOUND ub|" << nodeRot.ub << " ===== === \n";
+            // std::cerr << nodeRot.lb << "|lb OUTER BOUND ub|" << nodeRot.ub << " ===== === \n";
 
         if (optError - nodeRotParent.lb < sseThresh)
         {
@@ -398,8 +388,8 @@ float GoIcp::innerBnB(float *maxRotDistL, TransNode* transOut)
             transY = nodeTrans.y + nodeTrans.w / 2;
             transZ = nodeTrans.z + nodeTrans.w / 2;
 
-            omp_set_num_threads(4);
-            std:: cerr << omp_get_thread_num() << "num threads\n ";
+            omp_set_num_threads(2);
+            // std:: cerr << omp_get_thread_num() << "num threads\n ";
             #pragma omp parallel
             {
             #pragma omp for
@@ -408,7 +398,6 @@ float GoIcp::innerBnB(float *maxRotDistL, TransNode* transOut)
 				// Find distance between transformed point and closest point in model set ||R_r0 * x + t0 - y||
 				// pDataTemp is the data points rotated by R0
 				minDis[i] = dt.Distance(pDataTemp[i].x + transX, pDataTemp[i].y + transY, pDataTemp[i].z + transZ);
-                // if (i % 10000 == 0) std::cerr << i << "|DIST[i]|" << minDis[i] << "\n";
 
 				// Subtract the rotation uncertainty radius if calculating the rotation lower bound
 				// maxRotDisL == NULL when calculating the rotation upper bound
@@ -451,11 +440,11 @@ float GoIcp::innerBnB(float *maxRotDistL, TransNode* transOut)
 
             nodeTrans.lb = lb;
             nodeTrans.ub = ub;
-            std::cerr << "ub : " << ub << " ";
-            std::cerr << "lb : " << lb << " ||" << optErrorT  << " sse:" <<  sseThresh << "\n";
+            // std::cerr << "ub : " << ub << " ";
+            // std::cerr << "lb : " << lb << " ||" << optErrorT  << " sse:" <<  sseThresh << "\n";
 
             if (optErrorT - nodeTrans.lb < sseThresh)  {
-                std::cerr << "inner good enough" << optErrorT << "|error lb|" << nodeTrans.lb << "with eps:" << sseThresh << "\n";
+                // std::cerr << "inner good enough" << optErrorT << "|error lb|" << nodeTrans.lb << "with eps:" << sseThresh << "\n";
                 // break;
                 return optErrorT;
             }
@@ -495,7 +484,7 @@ void GoIcp::Init()
 
     optMat = Eigen::Matrix4d::Identity();
 
-    // sseThresh = Nd * mseThresh;
+    sseThresh = Nd * mseThresh;
 }
 
 // void GoIcp::init()

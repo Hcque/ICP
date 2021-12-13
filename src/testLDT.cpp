@@ -25,7 +25,7 @@ using namespace icp;
 
 class LDT{
 public:
-    LDT(const PointCloudTPtr& , uint32_t _div = 300, int _core = 1);
+    LDT(const PointCloudTPtr& , uint32_t _div = 300, int _core = 2);
     float Distance(float, float, float);
 
     multi_array<float,3> g, dt;
@@ -52,8 +52,19 @@ LDT::LDT(const PointCloudTPtr& _b, uint32_t _div, int _core): div(_div), CORES(_
     std::cerr << "max:" << _max << std::endl;
 
     auto _diag = _max - _min;
-    auto _fullLen =  GET_MAX( GET_MAX(_diag[0], _diag[1]), _diag[2]) * 1.3;
-    // auto _fullLen = 1;
+    auto _fullLen =  GET_MAX( GET_MAX(_diag[0], _diag[1]), _diag[2]) * 1.1;
+    
+    Point3f mid = (_min + _max ) / 2;
+    auto _halfLen = _fullLen/2;
+    auto expansion_factor = 2.0f;
+
+    _min.x = mid.x - _halfLen * expansion_factor;
+    _min.y = mid.y - _halfLen * expansion_factor;
+    _min.z = mid.z - _halfLen * expansion_factor;
+    _max.x = mid.x + _halfLen * expansion_factor;
+    _max.y = mid.y + _halfLen * expansion_factor;
+    _max.z = mid.z + _halfLen * expansion_factor;
+    _fullLen = 2 * _halfLen * expansion_factor;
     cellLen = _fullLen / (float) div;
     std::cerr << "cellLen:" << cellLen << std::endl;
 
@@ -81,12 +92,12 @@ LDT::LDT(const PointCloudTPtr& _b, uint32_t _div, int _core): div(_div), CORES(_
     for (int x = 0; x < div;  x++ )  {
         for (int y = 0; y < div; y ++ )
     {
-        if (dt[x][y][0]) g[x][y][0] = 0; //TODO
+        if (dt[x][y][0]) g[x][y][0] = 0; 
         else g[x][y][0] = infinity;
 
         for (int z = 1; z < div; z ++)
         {
-            if (dt[x][y][z] ) g[x][y][z] = 0; //TODO
+            if (dt[x][y][z] ) g[x][y][z] = 0; 
             else g[x][y][z] = g[x][y][z-1] + 1;
         }
         for (int z = div-2; z >= 0; z --)
@@ -223,17 +234,57 @@ LDT::LDT(const PointCloudTPtr& _b, uint32_t _div, int _core): div(_div), CORES(_
 
     float LDT::Distance(float x, float y, float z)
     {
+        double dx, dy, dz;
+        dx = dy = dz = 0.0;
+
+        float max_x = _min.x + cellLen * div;
+        float max_y = _min.y + cellLen * div;
+        float max_z = _min.z + cellLen * div;
+        if (x < _min.x) 
+        {
+            dx = _min.x - x;
+            x = _min.x;
+        }
+        if (x > max_x)
+        {
+            dx = x - max_x;
+            x = max_x;
+        }
+
+        if (y < _min.y) 
+        {
+            dy = _min.y - y;
+            y = _min.y;
+        }
+        if (y > max_y)
+        {
+            dy = y - max_y;
+            y = max_y;
+        }
+
+        if (z < _min.z) 
+        {
+            dz = _min.z - z;
+            z = _min.z;
+        }
+        if (z > max_z)
+        {
+            dz = z - max_z;
+            z = max_z;
+        }
+
         x = (int) ((x - _min.x) / cellLen);
         y = (int) ((y - _min.y) / cellLen);
         z = (int) ((z - _min.z) / cellLen);
 
-        if (x < 0) x = 0;
-        if (x > div-1) x = div - 1;
-        if (y < 0) y = 0;
-        if (y > div-1) y = div - 1;
-        if (z < 0) z = 0;
-        if (z > div-1) z = div - 1;
 
-        return g[x][y][z] * cellLen;
+        // if (x < 0) x = 0;
+        // if (x > div-1) x = div - 1;
+        // if (y < 0) y = 0;
+        // if (y > div-1) y = div - 1;
+        // if (z < 0) z = 0;
+        // if (z > div-1) z = div - 1;
+
+        return g[x][y][z] * cellLen + std::sqrt(dx*dx + dy*dy + dz*dz);
 
     }

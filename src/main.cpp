@@ -20,6 +20,9 @@
 #include <cmath>
 #include <fstream>
 
+
+#include <omp.h>
+
 using namespace icp;
 using namespace std;
 
@@ -48,17 +51,26 @@ void loadFile(const char* file_name, PointCloudT &cloud)
 }
 
 
+void test_kdtree()
+{
+	auto singleICP = new SingleThreadIcp(cloud_source, cloud_target,10);
+	Matrix4d tmpMat = Eigen::Matrix4d::Identity();
+    singleICP->test_kdtree_SINGLE(0);
+    singleICP->test_kdtree_para(0);
+
+}
+
+
 void test_icp(int ite){
-	clockBegin = clock();
 	auto singleICP = new SingleThreadIcp(cloud_source, cloud_target,ite);
 	Matrix4d tmpMat = Eigen::Matrix4d::Identity();
+
+	double start_time = omp_get_wtime();
     ICP_res icpres = singleICP->registration(tmpMat, cloud_source);
 	auto source_trans_matrix = icpres.resN3;
 
-
-	clockEnd = clock();
-    cout << (double) (clockEnd - clockBegin) / CLOCKS_PER_SEC << "\n" << endl;
-
+	double end_time = omp_get_wtime();
+	std::cerr << end_time - start_time << std::endl;
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_source_trans (new pcl::PointCloud<pcl::PointXYZ>());
 	pcl::PointCloud<pcl::PointXYZ> temp_cloud;
@@ -103,18 +115,9 @@ void test_icp(int ite){
 
 double mse;
 void test_goicp(int ite){
-	clockBegin = clock();
-	auto goicp = new GoIcp(cloud_target, cloud_source, ite);
-	goicp->sseThresh = mse;
-
-	std::cout << "Building Distance Transform...\n";
-	// goicp->BuildDT();
-	// cout << (double)(clockEnd - clockBegin)/CLOCKS_PER_SEC << "s (CPU)" << endl;
+	auto goicp = new GoIcp(cloud_target, cloud_source, ite, mse);
 
      auto icpres = goicp->registration();
-    cout << (double) (clockEnd - clockBegin) / CLOCKS_PER_SEC << "\n" << endl;
-
-
 	 auto source_trans_matrix = icpres.resN3;
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_source_trans (new pcl::PointCloud<pcl::PointXYZ>());
@@ -137,9 +140,9 @@ void test_goicp(int ite){
 		viewer->setBackgroundColor(255,255,255);
 
 		// black
-		pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> source_color(cloud_source,100,100,100);
-		viewer->addPointCloud<pcl::PointXYZ>(cloud_source,source_color,"source");
-		viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,1,"source");
+		// pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> source_color(cloud_source,0,255,0);
+		// viewer->addPointCloud<pcl::PointXYZ>(cloud_source,source_color,"source");
+		// viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,1,"source");
 
 		// blue
 		pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> target_color(cloud_target,0,0,255);
@@ -209,32 +212,35 @@ float _X, _Y, _Z;
 int CORES_ ;
 void test_LinearDT(const PointCloudTPtr& pModel)
 {
-    ldt = new LDT(pModel, 100, CORES_); 
-    ldt = new LDT(pModel, 200, CORES_); 
+    // ldt = new LDT(pModel, 100, CORES_); 
+    // ldt = new LDT(pModel, 200, CORES_); 
     ldt = new LDT(pModel, 300, CORES_ ); 
-    // kdt = new KDTree(pModel); 
+    kdt = new KDTree(pModel); 
 	// lldt = new LinearDT(pModel);
 
-	// for (auto& pp: cloud_source->points){
-	// 	_X = pp.x;
-	// 	_Y = pp.y;
-	// 	_Z = pp.z;
+	for (auto& pp: cloud_source->points){
+		_X = pp.x;
+		_Y = pp.y;
+		_Z = pp.z;
 
-	// 	float res1, res2, res3, res4;
+		float res1, res2, res3, res4;
 
-	// 	res1 = ldt->Distance(_X, _Y, _Z) ;
-	// 	// res2 = lldt->Evaluate(Point3f(_X, _Y, _Z)) ;
-	// 	// res3 = kdt->Distance(_X, _Y, _Z) ;
-	// 	// res4 = LDTprev->Distance(_X, _Y, _Z) ;
-	// 	// if (std::fabs(res1 - res2)  > 1.732 * 2 *  ldt->cellLen ) cc ++;
-	// 	// if (std::fabs(res1 - res2)  > 1.732 * 2 *  ldt->cellLen ) cc ++;
-	// 	// if (std::fabs(res1 - res2)  > 1.732 * 3 *  ldt->cellLen ) cc3 ++;
-	// 	// if (std::fabs(res1 - res2)  > 1.732 * 5 *  ldt->cellLen ) cc5 ++;
+		res1 = ldt->Distance(_X, _Y, _Z) ;
+		// res2 = lldt->Evaluate(Point3f(_X, _Y, _Z)) ;
+		res3 = kdt->Distance(_X, _Y, _Z) ;
+		// res4 = LDTprev->Distance(_X, _Y, _Z);
+		// if (std::fabs(res1 - res2)  > 1.732 * 2 *  ldt->cellLen ) cc ++;
+		// if (std::fabs(res1 - res2)  > 1.732 * 2 *  ldt->cellLen ) cc ++;
+		// if (std::fabs(res1 - res2)  > 1.732 * 3 *  ldt->cellLen ) cc3 ++;
+		// if (std::fabs(res1 - res2)  > 1.732 * 5 *  ldt->cellLen ) cc5 ++;
 
-	// 	std::cerr << res1 << "||" << res2   << "||" << res3 << "||\n" ; // << res4 <<  "\n";
+		if (std::fabs(res1 -res3) > 0.1)
+			std::cerr << res1 << "||" << res2   << "||" << res3 << "||\n" ; // << res4 <<  "\n";
 		
-	// }
+	}
 }
+
+
 
 int main(int argc, char**argv)
 {
@@ -258,7 +264,7 @@ int main(int argc, char**argv)
 	// std::cerr << "\n";
 
 	// int n_sample = atoi(argv[3]);
-	// mse = atof(argv[5]);
+	mse = atof(argv[4]);
 	// NUM_TH = atoi(argv[6]);
 
 	// _normal(cloud_source);
@@ -283,11 +289,11 @@ int main(int argc, char**argv)
 	// std :: cerr << source_matrix.rows() << "\n";
 	// std :: cerr << cloud_target->points.size() << "\n";
 		
-	// testkdtree(atoi(argv[3]));
+	// test_kdtree();
 	// test_icp(atoi(argv[3]));
 
-	// test_goicp(atoi(argv[3]));
-	test_LinearDT(cloud_target);
+	test_goicp(atoi(argv[3]));
+	// test_LinearDT(cloud_target);
     
     return 0;
 }
