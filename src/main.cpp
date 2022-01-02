@@ -290,9 +290,9 @@ int main(int argc, char**argv)
 	// std :: cerr << cloud_target->points.size() << "\n";
 		
 	// test_kdtree();
-	// test_icp(atoi(argv[3]));
+	test_icp(atoi(argv[3]));
 
-	test_goicp(atoi(argv[3]));
+	// test_goicp(atoi(argv[3]));
 	// test_LinearDT(cloud_target);
     
     return 0;
