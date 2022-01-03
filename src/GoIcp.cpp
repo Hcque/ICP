@@ -44,7 +44,7 @@ struct TransNode{
 class GoIcp
 {
 public:
-    GoIcp(PointCloudTPtr pModel, PointCloudTPtr pData, int iter = 1e4, double = 1.0);
+    GoIcp(PointCloudTPtr pModel, PointCloudTPtr pData, int iter = 1e4, double _mse = 0.001);
     ~GoIcp();
 
     void BuildDT();
@@ -83,6 +83,7 @@ GoIcp::GoIcp(PointCloudTPtr pModel, PointCloudTPtr pData, int _iter, double _mse
  pModel(pModel), pData(pData), ITER(_iter), dt(pModel), mseThresh(_mse)
 {
 
+std::cerr << "===init mse:" << mseThresh << "\n";
    InitRot.a = InitRot.b = InitRot.c = -PI; 
    InitRot.w = 2*PI;
    InitRot.l = 0;
@@ -351,7 +352,7 @@ float GoIcp::OuterBnB()
 
 float GoIcp::innerBnB(float *maxRotDistL, TransNode* transOut)
 {
-    // std::cerr << "start inner Bnb\n";
+    std::cerr << "start inner Bnb\n";
     int i,j;
     float transX, transY, transZ;
     float optErrorT;

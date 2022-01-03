@@ -115,10 +115,12 @@ void test_icp(int ite){
 
 double mse;
 void test_goicp(int ite){
+	// mse = 1e-3;
 	auto goicp = new GoIcp(cloud_target, cloud_source, ite, mse);
 
      auto icpres = goicp->registration();
 	 auto source_trans_matrix = icpres.resN3;
+	 std::cerr << "GOICP plot\n";
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_source_trans (new pcl::PointCloud<pcl::PointXYZ>());
 	pcl::PointCloud<pcl::PointXYZ> temp_cloud;
@@ -140,12 +142,12 @@ void test_goicp(int ite){
 		viewer->setBackgroundColor(255,255,255);
 
 		// black
-		// pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> source_color(cloud_source,0,255,0);
-		// viewer->addPointCloud<pcl::PointXYZ>(cloud_source,source_color,"source");
-		// viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,1,"source");
+		pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> source_color(cloud_source,0,0,0);
+		viewer->addPointCloud<pcl::PointXYZ>(cloud_source,source_color,"source");
+		viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,1,"source");
 
 		// blue
-		pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> target_color(cloud_target,0,0,255);
+		pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> target_color(cloud_target,0,255,255);
 		viewer->addPointCloud<pcl::PointXYZ>(cloud_target,target_color,"target");
 		viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,1,"target");
 
@@ -254,7 +256,7 @@ int main(int argc, char**argv)
     cloud_target  = PointCloudTPtr(new PointCloudT());
     loadFile(argv[1], *cloud_source);
     loadFile(argv[2], *cloud_target);
-	CORES_ = atoi(argv[3]);
+	// CORES_ = atoi(argv[3]);
 	// _Y = atof(argv[4]);
 	// _Z = atof(argv[5]);
 
@@ -290,9 +292,9 @@ int main(int argc, char**argv)
 	// std :: cerr << cloud_target->points.size() << "\n";
 		
 	// test_kdtree();
-	test_icp(atoi(argv[3]));
+	// test_icp(atoi(argv[3]));
 
-	// test_goicp(atoi(argv[3]));
+	test_goicp(atoi(argv[3]));
 	// test_LinearDT(cloud_target);
     
     return 0;
