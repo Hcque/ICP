@@ -5,9 +5,11 @@ The Iterative closest point algorithm is a famous local optimal solution for poi
 I use Eigen to manipulate the matrix operation. In the following , I will derive the basics.
 
 ======================
+
 One drawback for ICP is the bad initial guess will lead to converge locally, such as a hat may matched with a desk corner instead of the hat on the desk.
 GoIcp, in "Go-ICP: A Globally Optimal Solution to 
 3D ICP Point-Set Registration",  is one remedy for this, It search the solution exhaustively and somehow try to narrow the search space to reduce time compleixty. It use bfs and branch pruning for the rotaion and translation parametric space. I refer to the origin code of the author.
+
 	My work 1. I add the linear distance transform describe in "A GENERAL ALGORITHM FOR COMPUTING DISTANCE 
 	TRANSFORMS IN LINEAR TIME", to achieve O(n) construction of Euclidean distance transform, which serves for the O(1) distance compution when finding neigbours.
 
@@ -19,8 +21,11 @@ I consider the bound is actually not much narrowed enough to prune branches , th
 
 
 ============================
+
 Another approach is refer to deep learning, "Deep Closest Point: Learning Representations for Point Cloud Registration". It discard the iterative scheme, since the cloest point matching could be viewed as the function from R3 to R3. so why not learn that function use generated data. 
 It mapping 3d space points to an  dimension feature space, usually 512 .  The key operation of point cloud is the convolution for its neighbors , here I will omit the details until I has hands-on experience on the dcp. But it indicates my next orientation and exploration.
+
+=============================
 
 I will add two other learning direction of ICP :
 1 one method use the particle filter.
